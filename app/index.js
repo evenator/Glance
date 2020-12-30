@@ -11,6 +11,7 @@
  * ------------------------------------------------
  */
 
+import clock from "clock"
 import document from "document";
 import { inbox } from "file-transfer";
 import fs from "fs";
@@ -81,11 +82,18 @@ let syringe = document.getElementById("syringe");
 let hamburger = document.getElementById("hamburger");
 let predictedBg = document.getElementById("predictedBg");
 
-let dismissHighFor = 120;
-let dismissLowFor = 15;
-
 let data = null;
 let DISABLE_ALERTS = false;
+
+// Set up the default settings.
+// These settings are overwritten when new settings are received from the companion app.
+let settings = {
+  timeFormat: "12hr",
+  layoutThree: "steps",
+  layoutFour: "heart",
+  dismissHighFor: 120,
+  dismissLowFor: 15
+};
 
 // Data to send back to phone
 let dataToSend = {
@@ -100,14 +108,14 @@ dismiss.onclick = function (evt) {
   DISABLE_ALERTS = true;
   let currentBgFromBloodSugars = getFistBgNonpredictiveBG(data.bloodSugars.bgs);
 
-  if (currentBgFromBloodSugars.sgv >= parseInt(data.settings.highThreshold)) {
-    console.log("HIGH " + dismissHighFor);
-    setTimeout(disableAlertsFalse, dismissHighFor * 1000 * 60);
+  if (currentBgFromBloodSugars.sgv >= parseInt(settings.highThreshold)) {
+    console.log("HIGH " + settings.dismissHighFor);
+    setTimeout(disableAlertsFalse, settings.dismissHighFor * 1000 * 60);
   } else {
     // 15 mins
-    console.log("LOW " + dismissLowFor);
+    console.log("LOW " + settings.dismissLowFor);
 
-    setTimeout(disableAlertsFalse, dismissLowFor * 1000 * 60);
+    setTimeout(disableAlertsFalse, settings.dismissLowFor * 1000 * 60);
   }
 };
 
@@ -152,6 +160,67 @@ inbox.onnewfile = () => {
   } while (fileName);
 };
 
+clock.granularity = "seconds"
+clock.ontick = (event) => {
+  localUpdate();
+}
+
+/**
+ * Update the battery widget.
+ */
+function updateBattery() {
+  batteryLevel.width = batteryLevels.get().level;
+  batteryLevel.style.fill = batteryLevels.get().color;
+  batteryPercent.text = "" + batteryLevels.get().percent + "%";
+}
+
+/**
+ * Update the time widget(s).
+ */
+function updateTime() {
+  let time = dateTime.getTime(settings.timeFormat);
+  timeElement.text = time;
+  largeGraphTime.text = time;
+}
+
+/**
+ * Update the heart rate widget.
+ */
+function updateHeart() {
+  heart.text = userActivity.get().heartRate;
+  heartIcon.style.display = "inline";
+  heart.x = 35;
+}
+
+/**
+ * Update the step count widget.
+ */
+function updateSteps() {
+  steps.text = commas(userActivity.get().steps);
+  stepIcon.style.display = "inline";
+  steps.x = 35;
+}
+
+
+/**
+ * Update all widgets populated from local data.
+ */
+function localUpdate() {
+  updateTime();
+  updateBattery();
+
+  if (!settings.layoutFour || settings.layoutFour == "heart") {
+    updateHeart();
+  }
+
+  if (!settings.layoutThree || settings.layoutThree == "steps") {
+    updateSteps();
+  }
+}
+
+/**
+ * Send data to the companion and update the face with the most recently received data from the phone.
+ */
 function update() {
   console.log("app - update()");
   console.warn("JS memory: " + memory.js.used + "/" + memory.js.total);
@@ -166,26 +235,20 @@ function update() {
   };
 
   if (data) {
+    settings = data.settings
     console.warn("GOT DATA");
-    batteryLevel.width = batteryLevels.get().level;
-    batteryLevel.style.fill = batteryLevels.get().color;
-    batteryPercent.text = "" + batteryLevels.get().percent + "%";
-    timeElement.text = dateTime.getTime(data.settings.timeFormat);
-    largeGraphTime.text = dateTime.getTime(data.settings.timeFormat);
 
-    dismissHighFor = data.settings.dismissHighFor;
-    dismissLowFor = data.settings.dismissLowFor;
     weather.text = ""; // data.weather.temp;
     degreeIcon.style.display = "none";
 
     // colors
-    bgColor.gradient.colors.c1 = data.settings.bgColor;
-    bgColor.gradient.colors.c2 = data.settings.bgColorTwo;
+    bgColor.gradient.colors.c1 = settings.bgColor;
+    bgColor.gradient.colors.c2 = settings.bgColorTwo;
 
-    largeGraphBgColor.gradient.colors.c1 = data.settings.bgColor;
-    largeGraphBgColor.gradient.colors.c2 = data.settings.bgColorTwo;
+    largeGraphBgColor.gradient.colors.c1 = settings.bgColor;
+    largeGraphBgColor.gradient.colors.c2 = settings.bgColorTwo;
 
-    setTextColor(data.settings.textColor);
+    setTextColor(settings.textColor);
     // bloodsugars
     let currentBgFromBloodSugars = getFistBgNonpredictiveBG(
       data.bloodSugars.bgs
@@ -193,10 +256,10 @@ function update() {
 
     // Layout options
     if (
-      currentBgFromBloodSugars[data.settings.layoutOne] &&
-      data.settings.layoutOne != "iob"
+      currentBgFromBloodSugars[settings.layoutOne] &&
+      settings.layoutOne != "iob"
     ) {
-      iob.text = currentBgFromBloodSugars[data.settings.layoutOne];
+      iob.text = currentBgFromBloodSugars[settings.layoutOne];
       syringe.style.display = "none";
       iob.x = 10;
     } else {
@@ -217,10 +280,10 @@ function update() {
     }
 
     if (
-      currentBgFromBloodSugars[data.settings.layoutTwo] &&
-      data.settings.layoutTwo != "cob"
+      currentBgFromBloodSugars[settings.layoutTwo] &&
+      settings.layoutTwo != "cob"
     ) {
-      cob.text = currentBgFromBloodSugars[data.settings.layoutTwo];
+      cob.text = currentBgFromBloodSugars[settings.layoutTwo];
       hamburger.style.display = "none";
       cob.x = 10;
     } else {
@@ -240,30 +303,18 @@ function update() {
       }
     }
 
-    if (
-      currentBgFromBloodSugars[data.settings.layoutThree] &&
-      data.settings.layoutThree != "steps"
-    ) {
-      steps.text = currentBgFromBloodSugars[data.settings.layoutThree];
+    if (settings.layoutThree != "steps" && currentBgFromBloodSugars[settings.layoutThree]) {
+      steps.text = currentBgFromBloodSugars[settings.layoutThree];
       stepIcon.style.display = "none";
       steps.x = 10;
-    } else {
-      steps.text = commas(userActivity.get().steps);
-      stepIcon.style.display = "inline";
-      steps.x = 35;
     }
 
-    if (
-      currentBgFromBloodSugars[data.settings.layoutFour] &&
-      data.settings.layoutFour != "heart"
+    if (settings.layoutFour != "heart" &&
+      currentBgFromBloodSugars[settings.layoutFour]
     ) {
-      heart.text = currentBgFromBloodSugars[data.settings.layoutFour];
+      heart.text = currentBgFromBloodSugars[settings.layoutFour];
       heartIcon.style.display = "none";
       heart.x = 10;
-    } else {
-      heart.text = userActivity.get().heartRate;
-      heartIcon.style.display = "inline";
-      heart.x = 35;
     }
 
     sgv.text = currentBgFromBloodSugars.currentbg;
@@ -294,25 +345,25 @@ function update() {
     )[0];
 
     dateElement.text = dateTime.getDate(
-      data.settings.dateFormat,
-      data.settings.enableDOW
+      settings.dateFormat,
+      settings.enableDOW
     );
 
     let timeSenseLastSGV = dateTime.getTimeSenseLastSGV(
       currentBgFromBloodSugars.datetime
     )[1];
     // if DISABLE_ALERTS is true check if user is in range
-    if (DISABLE_ALERTS && data.settings.resetAlertDismissal) {
+    if (DISABLE_ALERTS && settings.resetAlertDismissal) {
       if (
-        parseInt(timeSenseLastSGV, 10) < data.settings.staleDataAlertAfter &&
+        parseInt(timeSenseLastSGV, 10) < settings.staleDataAlertAfter &&
         currentBgFromBloodSugars.direction != "DoubleDown" &&
         currentBgFromBloodSugars.direction != "DoubleUp" &&
         currentBgFromBloodSugars.loopstatus != "Warning"
       ) {
         // Dont reset alerts for LOS, DoubleUp, doubleDown, Warning
         if (
-          currentBgFromBloodSugars.sgv > parseInt(data.settings.lowThreshold) &&
-          currentBgFromBloodSugars.sgv < parseInt(data.settings.highThreshold)
+          currentBgFromBloodSugars.sgv > parseInt(settings.lowThreshold) &&
+          currentBgFromBloodSugars.sgv < parseInt(settings.highThreshold)
         ) {
           // if the BG is between the threshold
           console.error("here", DISABLE_ALERTS, parseInt(timeSenseLastSGV, 10));
@@ -323,7 +374,7 @@ function update() {
 
     alerts.check(
       currentBgFromBloodSugars,
-      data.settings,
+      settings,
       DISABLE_ALERTS,
       timeSenseLastSGV
     );
@@ -334,8 +385,8 @@ function update() {
     if (deltaText > 0) {
       deltaText = "+" + deltaText;
     }
-    delta.text = deltaText + " " + data.settings.glucoseUnits;
-    largeGraphDelta.text = deltaText + " " + data.settings.glucoseUnits;
+    delta.text = deltaText + " " + settings.glucoseUnits;
+    largeGraphDelta.text = deltaText + " " + settings.glucoseUnits;
     largeGraphLoopStatus.text = ""; // currentBgFromBloodSugars.loopstatus;
 
     arrows.href =
@@ -345,24 +396,24 @@ function update() {
 
     graph.update(
       data.bloodSugars.bgs,
-      data.settings.highThreshold,
-      data.settings.lowThreshold,
-      data.settings
+      settings.highThreshold,
+      settings.lowThreshold,
+      settings
     );
 
-    if (data.settings.largeGraph) {
+    if (settings.largeGraph) {
       goToLargeGraph.style.display = "inline";
     } else {
       goToLargeGraph.style.display = "none";
     }
-    // if (data.settings.treatments) {
+    // if (settings.treatments) {
     //   goToTreatment.style.display = "inline";
     // } else {
     //   goToTreatment.style.display = "none";
     // }
   } else {
     console.warn("NO DATA");
-    steps.text = commas(userActivity.get().steps);
+    updateSteps();
     heart.text = userActivity.get().heartRate;
     batteryLevel.width = batteryLevels.get().level;
     batteryPercent.text = "" + batteryLevels.get().percent + "%";
