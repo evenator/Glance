@@ -6,8 +6,8 @@ function mySettings(props) {
     <Page>
       <Text>
         <TextImageRow
-          label="Glance"
-          sublabel="https://github.com/Rytiggy/Glance"
+          label="Glance Fork"
+          sublabel="https://github.com/evenator/Glance"
           icon="https://image.ibb.co/gbWF2H/twerp_bowtie_64.png"
         />
         <Text>&nbsp;</Text>
