@@ -53,7 +53,7 @@ function mySettings(props) {
 
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
-          "nightscout" ? (
+            "nightscout" ? (
             <Text text="center">
               https://<Text bold>SiteName</Text>.NightscoutHostSite.com
             </Text>
@@ -62,7 +62,7 @@ function mySettings(props) {
 
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
-          "nightscout" ? (
+            "nightscout" ? (
             <TextInput
               title="Nightscout"
               label="Site Name"
@@ -73,7 +73,7 @@ function mySettings(props) {
 
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
-          "nightscout" ? (
+            "nightscout" ? (
             <Text text="center">
               https://SiteName.<Text bold>NightscoutHostSite</Text>.com
             </Text>
@@ -81,18 +81,29 @@ function mySettings(props) {
         ) : null}
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
-          "nightscout" ? (
+            "nightscout" ? (
             <Select
               label="Nightscout Host Site"
               settingsKey="nightscoutSiteHost"
               options={[
                 { name: "Heroku", value: "herokuapp.com" },
                 { name: "Azure", value: "azurewebsites.net" },
+                { name: "GluRoo", value: "ns.gluroo.com" },
               ]}
             />
           ) : null
         ) : null}
 
+        {(props.settings.dataSource &&
+          JSON.parse(props.settings.dataSource).values[0].value ==
+          "nightscout") ? (
+            <TextInput
+              title="Nightscout"
+              label="API Secret"
+              settingsKey="nightscoutApiSecret"
+            />
+        ) : null
+        }
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value == "dexcom" ? (
             <Section
@@ -173,7 +184,7 @@ function mySettings(props) {
               <Toggle settingsKey="rapidFall" label="Rapid Fall Alerts" />
               {props.settings.dataSource ? (
                 JSON.parse(props.settings.dataSource).values[0].value ==
-                "nightscout" ? (
+                  "nightscout" ? (
                   <Toggle settingsKey="loopstatus" label="Loop Status Alerts" />
                 ) : null
               ) : null}
@@ -231,7 +242,7 @@ function mySettings(props) {
         </Text>
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
-          "nightscout" ? (
+            "nightscout" ? (
             <Toggle
               settingsKey="enableSmallGraphPrediction"
               label="Main Graph Predictions"
@@ -263,7 +274,7 @@ function mySettings(props) {
 
         {props.settings.bgColor ? (
           JSON.parse(props.settings.bgColor) == "#FFFFFF" ? (
-            <Section title={}>
+            <Section title={ }>
               <Text bold align="center">
                 Random Color Generator
               </Text>
@@ -286,7 +297,7 @@ function mySettings(props) {
         {props.settings.dataSource ? (
           JSON.parse(props.settings.dataSource).values[0].value ==
             "nightscout" ||
-          JSON.parse(props.settings.dataSource).values[0].value == "spike" ? (
+            JSON.parse(props.settings.dataSource).values[0].value == "spike" ? (
             <Section>
               <Text bold align="center">
                 Customize

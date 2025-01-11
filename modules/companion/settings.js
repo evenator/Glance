@@ -73,6 +73,21 @@ export default class settings {
           })
         );
       }
+      let nightscoutApiSecret = null;
+      if (
+        settingsStorage.getItem("nightscoutApiSecret") &&
+        JSON.parse(settingsStorage.getItem("nightscoutApiSecret")).name
+      ) {
+        nightscoutApiSecret = JSON.parse(
+          settingsStorage.getItem("nightscoutApiSecret")
+        ).name;
+      }
+      else if (!nightscoutApiSecret) {
+        settingsStorage.setItem(
+          "nightscoutApiSecret",
+          JSON.stringify({ name: "" })
+        );
+      }
 
       url =
         "https://" +
@@ -80,13 +95,13 @@ export default class settings {
         "." +
         nightscoutSiteHost +
         "/pebble" +
-        queryParms;
+        queryParms + (nightscoutApiSecret ? ("&token=" + nightscoutApiSecret) : "");
       extraDataUrl =
         "https://" +
         nightscoutSiteName.toLowerCase() +
         "." +
         nightscoutSiteHost +
-        "/api/v2/properties";
+        "/api/v2/properties" + (nightscoutApiSecret ? ("?token=" + nightscoutApiSecret) : "");
     } else if (dataSource === "xdrip") {
       // xDrip+
       if (dataReceivedFromWatch && dataReceivedFromWatch != null) {
